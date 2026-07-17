@@ -268,6 +268,31 @@ export function FinanceProvider({ children }) {
     [state]
   );
 
+  const addNotification = useCallback(
+    (message) => {
+      updateState((prev) => ({
+        ...prev,
+        notifications: [
+          {
+            id: Date.now().toString(),
+            message,
+            time: Date.now(),
+            read: false,
+          },
+          ...prev.notifications,
+        ],
+      }));
+    },
+    [updateState]
+  );
+
+  const markAllRead = useCallback(() => {
+    updateState((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((n) => ({ ...n, read: true })),
+    }));
+  }, [updateState]);
+
   const syncToSpreadsheet = useCallback(
     async (txn) => {
       if (!state?.settings.spreadsheetUrl) return;
@@ -437,31 +462,6 @@ export function FinanceProvider({ children }) {
     },
     [updateState]
   );
-
-  const addNotification = useCallback(
-    (message) => {
-      updateState((prev) => ({
-        ...prev,
-        notifications: [
-          {
-            id: Date.now().toString(),
-            message,
-            time: Date.now(),
-            read: false,
-          },
-          ...prev.notifications,
-        ],
-      }));
-    },
-    [updateState]
-  );
-
-  const markAllRead = useCallback(() => {
-    updateState((prev) => ({
-      ...prev,
-      notifications: prev.notifications.map((n) => ({ ...n, read: true })),
-    }));
-  }, [updateState]);
 
   const value = {
     state,
