@@ -208,6 +208,8 @@ const FUND_SOURCE_LABELS = {
 
 export function useFundSourceDonutData(fundSources) {
   return useMemo(() => {
+    if (!fundSources || fundSources.length === 0)
+      return { labels: [], data: [], colors: [], total: 0 };
     const grouped = {};
     fundSources.forEach((fs) => {
       const type = fs.type || "other";
