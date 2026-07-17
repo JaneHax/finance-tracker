@@ -20,17 +20,12 @@ function getStoredAuth() {
 
 function storeAuth(data) {
   if (typeof window === "undefined") return;
-  if (data) {
-    localStorage.setItem("fb_auth", JSON.stringify(data));
-  } else {
-    localStorage.removeItem("fb_auth");
-  }
+  if (data) localStorage.setItem("fb_auth", JSON.stringify(data));
+  else localStorage.removeItem("fb_auth");
 }
 
 function notifyListeners(user) {
-  _listeners.forEach((cb) => {
-    try { cb(user); } catch {}
-  });
+  _listeners.forEach((cb) => { try { cb(user); } catch {} });
 }
 
 async function refreshIdToken() {
@@ -41,10 +36,7 @@ async function refreshIdToken() {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          grant_type: "refresh_token",
-          refresh_token: _refreshToken,
-        }),
+        body: JSON.stringify({ grant_type: "refresh_token", refresh_token: _refreshToken }),
       }
     );
     const data = await res.json();
@@ -58,39 +50,20 @@ async function refreshIdToken() {
   return null;
 }
 
-async function authedFetch(url, options = {}) {
-  let token = _idToken;
-  if (!token) token = await refreshIdToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...options.headers, Authorization: `Bearer ${token}` },
-  });
-
-  if (res.status === 401) {
-    token = await refreshIdToken();
-    if (!token) throw new Error("Token expired");
-    return fetch(url, {
-      ...options,
-      headers: { ...options.headers, Authorization: `Bearer ${token}` },
-    });
-  }
-  return res;
+function addKey(url) {
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}key=${API_KEY}`;
 }
 
-function publicFetch(url, options = {}) {
-  const sep = url.includes("?") ? "&" : "?";
-  return fetch(`${url}${sep}key=${API_KEY}`, options);
+function clearAuth() {
+  _idToken = null; _refreshToken = null; _uid = null; storeAuth(null);
 }
 
 export function onAuthStateChanged(callback) {
   _listeners.push(callback);
   const stored = getStoredAuth();
-  if (stored && stored.refreshToken) {
-    _idToken = stored.idToken;
-    _refreshToken = stored.refreshToken;
-    _uid = stored.uid;
+  if (stored?.refreshToken) {
+    _idToken = stored.idToken; _refreshToken = stored.refreshToken; _uid = stored.uid;
     refreshIdToken().then((t) => {
       if (t) callback({ uid: _uid });
       else { clearAuth(); callback(null); }
@@ -98,29 +71,17 @@ export function onAuthStateChanged(callback) {
   } else {
     setTimeout(() => callback(null), 0);
   }
-  return () => {
-    _listeners = _listeners.filter((cb) => cb !== callback);
-  };
-}
-
-function clearAuth() {
-  _idToken = null;
-  _refreshToken = null;
-  _uid = null;
-  storeAuth(null);
+  return () => { _listeners = _listeners.filter((cb) => cb !== callback); };
 }
 
 export async function createUser(email, password) {
   const res = await fetch(`${AUTH_URL}:signUp?key=${API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, returnSecureToken: true }),
   });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
-  _idToken = data.idToken;
-  _refreshToken = data.refreshToken;
-  _uid = data.localId;
+  _idToken = data.idToken; _refreshToken = data.refreshToken; _uid = data.localId;
   storeAuth({ idToken: _idToken, refreshToken: _refreshToken, uid: _uid });
   notifyListeners({ uid: _uid });
   return { uid: data.localId, email: data.email };
@@ -128,29 +89,22 @@ export async function createUser(email, password) {
 
 export async function signInUser(email, password) {
   const res = await fetch(`${AUTH_URL}:signInWithPassword?key=${API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, returnSecureToken: true }),
   });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
-  _idToken = data.idToken;
-  _refreshToken = data.refreshToken;
-  _uid = data.localId;
+  _idToken = data.idToken; _refreshToken = data.refreshToken; _uid = data.localId;
   storeAuth({ idToken: _idToken, refreshToken: _refreshToken, uid: _uid });
   notifyListeners({ uid: _uid });
   return { uid: data.localId, email: data.email };
 }
 
-export async function signOutUser() {
-  clearAuth();
-  notifyListeners(null);
-}
+export async function signOutUser() { clearAuth(); notifyListeners(null); }
 
 export async function sendResetPassword(email) {
   const res = await fetch(`${AUTH_URL}:sendOobCode?key=${API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ requestType: "PASSWORD_RESET", email }),
   });
   const data = await res.json();
@@ -158,55 +112,44 @@ export async function sendResetPassword(email) {
 }
 
 export async function getDocById(collection, docId) {
-  const url = `${FIRESTORE_URL}/${collection}/${docId}`;
-  const res = await authedFetch(url);
+  const res = await fetch(addKey(`${FIRESTORE_URL}/${collection}/${docId}`));
   if (res.status === 404) return null;
   if (!res.ok) return null;
-  const data = await res.json();
-  return firestoreToObj(data);
+  return firestoreToObj(await res.json());
 }
 
 export async function setDocById(collection, docId, data) {
-  const url = `${FIRESTORE_URL}/${collection}/${docId}`;
-  const res = await authedFetch(url, {
+  const res = await fetch(addKey(`${FIRESTORE_URL}/${collection}/${docId}`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fields: toFirestoreFields(data) }),
   });
   if (!res.ok) {
     const errBody = await res.text();
-    throw new Error(`Firestore write error: ${res.status} ${errBody}`);
+    throw new Error(`Firestore write ${res.status}: ${errBody.slice(0, 200)}`);
   }
   return res.json();
 }
 
-export async function queryCollection(collection, field, value, limitCount, authed = false) {
-  const url = `${FIRESTORE_URL}:runQuery`;
-  const body = {
-    structuredQuery: {
-      from: [{ collectionId: collection }],
-      where: {
-        fieldFilter: {
-          field: { fieldPath: field },
-          op: "EQUAL",
-          value: toFirestoreValue(value),
-        },
-      },
-      limit: limitCount || 1,
-    },
-  };
-
-  const fetcher = authed ? authedFetch : publicFetch;
-  const res = await fetcher(url, {
+export async function queryCollection(collection, field, value, limitCount) {
+  const res = await fetch(addKey(`${FIRESTORE_URL}:runQuery`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: collection }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: field },
+            op: "EQUAL",
+            value: toFirestoreValue(value),
+          },
+        },
+        limit: limitCount || 1,
+      },
+    }),
   });
-  if (!res.ok) {
-    const errBody = await res.text();
-    console.error("Firestore query error:", res.status, errBody);
-    return [];
-  }
+  if (!res.ok) return [];
   const arr = await res.json();
   return arr
     .filter((r) => r.document)
@@ -221,50 +164,39 @@ function toFirestoreValue(val) {
   if (typeof val === "boolean") return { booleanValue: val };
   if (Array.isArray(val))
     return { arrayValue: { values: val.map(toFirestoreValue) } };
-  if (typeof val === "object") {
-    const fields = {};
-    for (const [k, v] of Object.entries(val)) {
-      fields[k] = toFirestoreValue(v);
-    }
-    return { mapValue: { fields } };
-  }
-  return { stringValue: String(val) };
+  const fields = {};
+  for (const [k, v] of Object.entries(val)) fields[k] = toFirestoreValue(v);
+  return { mapValue: { fields } };
 }
 
 function toFirestoreFields(obj) {
   const fields = {};
-  for (const [k, v] of Object.entries(obj)) {
-    fields[k] = toFirestoreValue(v);
-  }
+  for (const [k, v] of Object.entries(obj)) fields[k] = toFirestoreValue(v);
   return fields;
 }
 
 function firestoreToObj(doc) {
-  if (!doc || !doc.fields) return {};
-  const result = {};
-  for (const [k, v] of Object.entries(doc.fields)) {
-    result[k] = firestoreValueToJs(v);
-  }
-  return result;
+  if (!doc?.fields) return {};
+  const r = {};
+  for (const [k, v] of Object.entries(doc.fields)) r[k] = fv(v);
+  return r;
 }
 
-function firestoreValueToJs(val) {
-  if (val === null || val === undefined) return null;
+function fv(val) {
+  if (!val) return null;
   if (val.nullValue !== undefined) return null;
   if (val.stringValue !== undefined) return val.stringValue;
   if (val.integerValue !== undefined) return Number(val.integerValue);
   if (val.doubleValue !== undefined) return Number(val.doubleValue);
   if (val.booleanValue !== undefined) return val.booleanValue;
   if (val.timestampValue !== undefined) return val.timestampValue;
-  if (val.arrayValue !== undefined)
-    return (val.arrayValue.values || []).map(firestoreValueToJs);
-  if (val.mapValue !== undefined) return firestoreToObj(val.mapValue);
+  if (val.arrayValue) return (val.arrayValue.values || []).map(fv);
+  if (val.mapValue) return firestoreToObj(val.mapValue);
   return null;
 }
 
 export function getCurrentUser() {
   if (_uid) return { uid: _uid };
   const stored = getStoredAuth();
-  if (stored?.uid) return { uid: stored.uid };
-  return null;
+  return stored?.uid ? { uid: stored.uid } : null;
 }
