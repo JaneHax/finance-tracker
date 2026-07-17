@@ -25,7 +25,7 @@ import {
 } from "@/lib/utils";
 import AnimatedNumber from "@/components/dashboard/AnimatedNumber";
 import Sparkline from "@/components/dashboard/Sparkline";
-import { MainChart, useFundSourceDonutData, DonutChartView, DonutLegend } from "@/components/dashboard/Charts";
+import { MainChart, DonutChartView, DonutLegend } from "@/components/dashboard/Charts";
 
 const ICONS = {
   wallet: Wallet,
@@ -103,7 +103,29 @@ export default function Dashboard({ onNavigate }) {
     [state.transactions]
   );
 
-  const donut = useFundSourceDonutData(state.fundSources);
+  const donut = useMemo(() => {
+    const fs = state.fundSources || [];
+    if (fs.length === 0)
+      return { labels: [], data: [], colors: [], total: 0 };
+    const colors = { bank: "#10B981", ewallet: "#3B82F6", crypto: "#F59E0B" };
+    const labels = { bank: "Bank", ewallet: "E-Wallet", crypto: "Crypto" };
+    const grouped = {};
+    fs.forEach((f) => {
+      const t = f.type || "other";
+      if (!grouped[t]) grouped[t] = { balance: 0, label: labels[t] || t };
+      grouped[t].balance += f.balance || 0;
+    });
+    const resultLabels = [],
+      resultData = [],
+      resultColors = [];
+    Object.entries(grouped).forEach(([t, info]) => {
+      resultLabels.push(info.label);
+      resultData.push(info.balance);
+      resultColors.push(colors[t] || "#71717A");
+    });
+    const total = resultData.reduce((s, v) => s + v, 0);
+    return { labels: resultLabels, data: resultData, colors: resultColors, total };
+  }, [state.fundSources]);
 
   const changeMonth = (delta) => {
     let m = calMonth + delta;
