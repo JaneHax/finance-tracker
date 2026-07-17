@@ -171,8 +171,12 @@ export async function setDocById(collection, docId, data) {
   const res = await authedFetch(url, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(objToFirestore(data)),
+    body: JSON.stringify({ fields: toFirestoreFields(data) }),
   });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Firestore write error: ${res.status} ${errBody}`);
+  }
   return res.json();
 }
 
@@ -227,18 +231,12 @@ function toFirestoreValue(val) {
   return { stringValue: String(val) };
 }
 
-function objToFirestore(obj) {
-  if (obj === null || obj === undefined) return { nullValue: null };
-  if (Array.isArray(obj))
-    return { arrayValue: { values: obj.map(toFirestoreValue) } };
-  if (typeof obj === "object") {
-    const fields = {};
-    for (const [k, v] of Object.entries(obj)) {
-      fields[k] = toFirestoreValue(v);
-    }
-    return { mapValue: { fields } };
+function toFirestoreFields(obj) {
+  const fields = {};
+  for (const [k, v] of Object.entries(obj)) {
+    fields[k] = toFirestoreValue(v);
   }
-  return toFirestoreValue(obj);
+  return fields;
 }
 
 function firestoreToObj(doc) {
