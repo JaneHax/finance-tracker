@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Menu, Search, Calendar, Bell, Plus } from "lucide-react";
 import { MONTH_SHORT } from "@/lib/utils";
+import NotificationDropdown from "@/components/ui/NotificationDropdown";
 
-export default function Header({ onMenu, onAddTransaction, onSearch, searchValue, showToast }) {
+export default function Header({ onMenu, onAddTransaction, onSearch, searchValue }) {
+  const [showNotif, setShowNotif] = useState(false);
   const now = new Date();
   const dateStr = `${now.getDate()} ${MONTH_SHORT[now.getMonth()]} ${now.getFullYear()}`;
 
@@ -36,13 +39,19 @@ export default function Header({ onMenu, onAddTransaction, onSearch, searchValue
         <Calendar className="w-3.5 h-3.5 text-emerald-400" />
         <span>{dateStr}</span>
       </div>
-      <button
-        className="btn-ghost !p-2.5 relative"
-        onClick={() => showToast?.("Belum ada notifikasi", "info")}
-      >
-        <Bell className="w-4 h-4" />
-        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-      </button>
+      <div className="relative">
+        <button
+          className="btn-ghost !p-2.5 relative"
+          onClick={() => setShowNotif((v) => !v)}
+        >
+          <Bell className="w-4 h-4" />
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+        </button>
+        <NotificationDropdown
+          show={showNotif}
+          onClose={() => setShowNotif(false)}
+        />
+      </div>
       <button onClick={onAddTransaction} className="btn-primary">
         <Plus className="w-4 h-4" />
         <span className="hidden sm:inline">Tambah</span>

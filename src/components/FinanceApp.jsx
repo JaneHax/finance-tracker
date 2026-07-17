@@ -20,7 +20,7 @@ const Dashboard = dynamic(() => import("@/components/Dashboard"), { ssr: false }
 const ReportsPage = dynamic(() => import("@/components/ReportsPage"), { ssr: false });
 
 function AppContent() {
-  const { state, currentUser, loading, logout, showToast } = useFinance();
+  const { state, currentUser, loading, logout } = useFinance();
   const [activePage, setActivePage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -183,7 +183,6 @@ function AppContent() {
           onAddTransaction={() => setShowAddTxn(true)}
           onSearch={handleSearch}
           searchValue={search}
-          showToast={showToast}
         />
 
         <div className="flex-1 p-5 lg:p-7">

@@ -307,9 +307,14 @@ export function FinanceProvider({ children }) {
         }
         return next;
       });
+      addNotification(
+        txn.type === "income"
+          ? `Pemasukan: ${txn.name} — ${txn.amount.toLocaleString("id-ID")}`
+          : `Pengeluaran: ${txn.name} — ${txn.amount.toLocaleString("id-ID")}`
+      );
       setTimeout(() => syncToSpreadsheet(txn), 100);
     },
-    [updateState, syncToSpreadsheet]
+    [updateState, syncToSpreadsheet, addNotification]
   );
 
   const deleteTransaction = useCallback(
@@ -433,6 +438,31 @@ export function FinanceProvider({ children }) {
     [updateState]
   );
 
+  const addNotification = useCallback(
+    (message) => {
+      updateState((prev) => ({
+        ...prev,
+        notifications: [
+          {
+            id: Date.now().toString(),
+            message,
+            time: Date.now(),
+            read: false,
+          },
+          ...prev.notifications,
+        ],
+      }));
+    },
+    [updateState]
+  );
+
+  const markAllRead = useCallback(() => {
+    updateState((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((n) => ({ ...n, read: true })),
+    }));
+  }, [updateState]);
+
   const value = {
     state,
     setState: updateState,
@@ -460,6 +490,8 @@ export function FinanceProvider({ children }) {
     disconnectSpreadsheet,
     toggleAutoSync,
     syncToSpreadsheet,
+    addNotification,
+    markAllRead,
   };
 
   return (

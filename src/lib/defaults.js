@@ -19,6 +19,7 @@ export const DEFAULT_STATE = {
     ],
   },
   transactions: [],
+  notifications: [],
   settings: {
     currency: "IDR",
     spreadsheetConnected: false,
