@@ -268,6 +268,34 @@ export function FinanceProvider({ children }) {
     [state]
   );
 
+  const syncToSpreadsheet = useCallback(
+    async (txn) => {
+      if (!state?.settings.spreadsheetUrl) return;
+      try {
+        const res = await fetch(state.settings.spreadsheetUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sheet: state.settings.sheetName,
+            data: {
+              ...txn,
+              category: getCategoryById(txn.categoryId).name,
+              source: getFundSourceById(txn.sourceId).name,
+            },
+          }),
+        });
+        if (res.ok) {
+          showToast("Tersinkron ke Sheets", "success");
+        } else {
+          showToast("Gagal sync: " + res.status, "error");
+        }
+      } catch (e) {
+        showToast("Gagal sync", "error");
+      }
+    },
+    [state, getCategoryById, getFundSourceById, showToast]
+  );
+
   const addTransaction = useCallback(
     (txn) => {
       updateState((prev) => {
@@ -279,8 +307,9 @@ export function FinanceProvider({ children }) {
         }
         return next;
       });
+      setTimeout(() => syncToSpreadsheet(txn), 100);
     },
-    [updateState]
+    [updateState, syncToSpreadsheet]
   );
 
   const deleteTransaction = useCallback(
@@ -402,34 +431,6 @@ export function FinanceProvider({ children }) {
       }));
     },
     [updateState]
-  );
-
-  const syncToSpreadsheet = useCallback(
-    async (txn) => {
-      if (!state?.settings.spreadsheetUrl) return;
-      try {
-        const res = await fetch(state.settings.spreadsheetUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sheet: state.settings.sheetName,
-            data: {
-              ...txn,
-              category: getCategoryById(txn.categoryId).name,
-              source: getFundSourceById(txn.sourceId).name,
-            },
-          }),
-        });
-        if (res.ok) {
-          showToast("Tersinkron ke Sheets", "success");
-        } else {
-          showToast("Gagal sync: " + res.status, "error");
-        }
-      } catch (e) {
-        showToast("Gagal sync", "error");
-      }
-    },
-    [state, getCategoryById, getFundSourceById, showToast]
   );
 
   const value = {
