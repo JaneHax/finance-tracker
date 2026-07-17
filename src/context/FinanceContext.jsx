@@ -26,7 +26,7 @@ import {
   limit,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { DEFAULT_STATE, generateSampleTransactions } from "@/lib/defaults";
+import { DEFAULT_STATE } from "@/lib/defaults";
 
 const FinanceContext = createContext(null);
 
@@ -102,7 +102,6 @@ export function FinanceProvider({ children }) {
           photoURL: null,
         },
         hasUsername: true,
-        transactions: generateSampleTransactions(),
       };
       await setDoc(doc(db, "users", cred.user.uid), newUserState);
       // Override state in case onAuthStateChanged set a default already
@@ -176,7 +175,6 @@ export function FinanceProvider({ children }) {
                 photoURL: null,
               },
               hasUsername: true,
-              transactions: generateSampleTransactions(),
             };
             setState(newUserState);
             await setDoc(doc(db, "users", user.uid), newUserState);

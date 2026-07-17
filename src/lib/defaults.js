@@ -2,11 +2,11 @@ export const DEFAULT_STATE = {
   user: null,
   hasUsername: false,
   fundSources: [
-    { id: "fs1", name: "Bank BCA", type: "bank", balance: 15000000, icon: "landmark", color: "#3B82F6" },
-    { id: "fs2", name: "GoPay", type: "ewallet", balance: 850000, icon: "smartphone", color: "#10B981" },
-    { id: "fs3", name: "OVO", type: "ewallet", balance: 425000, icon: "smartphone", color: "#8B5CF6" },
-    { id: "fs4", name: "Binance", type: "crypto", balance: 5200000, icon: "bitcoin", color: "#F59E0B" },
-    { id: "fs5", name: "Cash", type: "cash", balance: 750000, icon: "wallet", color: "#EC4899" },
+    { id: "fs1", name: "Bank BCA", type: "bank", balance: 0, icon: "landmark", color: "#3B82F6" },
+    { id: "fs2", name: "GoPay", type: "ewallet", balance: 0, icon: "smartphone", color: "#10B981" },
+    { id: "fs3", name: "OVO", type: "ewallet", balance: 0, icon: "smartphone", color: "#8B5CF6" },
+    { id: "fs4", name: "Binance", type: "crypto", balance: 0, icon: "bitcoin", color: "#F59E0B" },
+    { id: "fs5", name: "Cash", type: "cash", balance: 0, icon: "wallet", color: "#EC4899" },
   ],
   categories: {
     expense: [
