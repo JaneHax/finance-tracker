@@ -38,6 +38,14 @@ export default function SpreadsheetModal({ show, onClose }) {
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
             Sinkronkan semua transaksi ke Google Spreadsheet untuk backup & analisis manual.
           </p>
+          <a
+            href="/api/sync"
+            target="_blank"
+            className="inline-flex items-center gap-1 text-xs mt-2"
+            style={{ color: "var(--accent)" }}
+          >
+            <LinkIcon className="w-3 h-3" /> Tutorial Setup
+          </a>
         </div>
         <div className="space-y-4">
           <div>
