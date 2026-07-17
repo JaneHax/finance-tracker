@@ -183,6 +183,7 @@ function AppContent() {
           onAddTransaction={() => setShowAddTxn(true)}
           onSearch={handleSearch}
           searchValue={search}
+          showToast={showToast}
         />
 
         <div className="flex-1 p-5 lg:p-7">

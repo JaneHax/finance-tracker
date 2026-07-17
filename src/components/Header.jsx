@@ -3,7 +3,7 @@
 import { Menu, Search, Calendar, Bell, Plus } from "lucide-react";
 import { MONTH_SHORT } from "@/lib/utils";
 
-export default function Header({ onMenu, onAddTransaction, onSearch, searchValue }) {
+export default function Header({ onMenu, onAddTransaction, onSearch, searchValue, showToast }) {
   const now = new Date();
   const dateStr = `${now.getDate()} ${MONTH_SHORT[now.getMonth()]} ${now.getFullYear()}`;
 
@@ -38,7 +38,7 @@ export default function Header({ onMenu, onAddTransaction, onSearch, searchValue
       </div>
       <button
         className="btn-ghost !p-2.5 relative"
-        onClick={() => {}}
+        onClick={() => showToast?.("Belum ada notifikasi", "info")}
       >
         <Bell className="w-4 h-4" />
         <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
