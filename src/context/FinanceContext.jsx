@@ -274,7 +274,7 @@ export function FinanceProvider({ children }) {
       try {
         const res = await fetch(state.settings.spreadsheetUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain" },
           body: JSON.stringify({
             sheet: state.settings.sheetName,
             data: {
