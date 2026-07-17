@@ -14,7 +14,6 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
-  reload,
 } from "firebase/auth";
 import {
   doc,
@@ -42,7 +41,6 @@ export function FinanceProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
   const [toasts, setToasts] = useState([]);
   const saveTimer = useRef(null);
 
@@ -138,57 +136,6 @@ export function FinanceProvider({ children }) {
     },
     []
   );
-
-  const resendVerification = useCallback(async () => {
-    if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
-      showToast("Email verifikasi telah dikirim ulang", "success");
-    }
-  }, [showToast]);
-
-  const reloadUser = useCallback(async () => {
-    if (auth.currentUser) {
-      await reload(auth.currentUser);
-      const verified = auth.currentUser.emailVerified;
-      setEmailVerified(verified);
-      if (verified) {
-        // User baru verified — load Firestore data
-        try {
-          const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            const merged = {
-              ...DEFAULT_STATE,
-              ...data,
-              user: {
-                name: data.user?.name || data.username || "User",
-                email: auth.currentUser.email,
-                photoURL: data.user?.photoURL || null,
-              },
-            };
-            setState(merged);
-          } else {
-            const newUserState = {
-              ...DEFAULT_STATE,
-              username: auth.currentUser.email.split("@")[0],
-              user: {
-                name: auth.currentUser.email.split("@")[0],
-                email: auth.currentUser.email,
-                photoURL: null,
-              },
-              hasUsername: true,
-              transactions: generateSampleTransactions(),
-            };
-            setState(newUserState);
-            await setDoc(doc(db, "users", auth.currentUser.uid), newUserState);
-          }
-        } catch (e) {
-          console.error("Error loading user data after verify:", e);
-        }
-        showToast("Email terverifikasi!", "success");
-      }
-    }
-  }, [showToast]);
 
   const resetPassword = useCallback(
     async (email) => {
@@ -474,8 +421,6 @@ export function FinanceProvider({ children }) {
       setToasts((prev) => prev.filter((t) => t.id !== id)),
     signUp,
     signIn,
-    resendVerification,
-    reloadUser,
     resetPassword,
     logout,
     saveUsername,
