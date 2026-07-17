@@ -22,6 +22,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${inter.variable} ${instrumentSerif.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://www.googleapis.com" />
+        <link rel="preconnect" href="https://securetoken.googleapis.com" />
+        <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+      </head>
       <body style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
         {children}
       </body>
