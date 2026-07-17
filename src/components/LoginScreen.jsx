@@ -28,8 +28,8 @@ export default function LoginScreen() {
 
   const validate = () => {
     const { email, username, password, confirmPw } = form;
-    if (!email.trim()) return "Email wajib diisi";
-    if (!email.includes("@")) return "Email tidak valid";
+    if (!email.trim()) return "Email atau username wajib diisi";
+    if (mode === "signup" && !email.includes("@")) return "Email tidak valid";
     if (!password || password.length < 6)
       return "Password minimal 6 karakter";
     if (mode === "signup") {
@@ -52,7 +52,7 @@ export default function LoginScreen() {
     try {
       if (mode === "signup") {
         await signUp(form.email, form.username, form.password);
-        showToast("Akun dibuat! Cek email untuk verifikasi", "success");
+        showToast("Akun berhasil dibuat!", "success");
       } else {
         await signIn(form.email || form.username, form.password);
       }
