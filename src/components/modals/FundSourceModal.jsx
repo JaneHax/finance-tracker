@@ -76,10 +76,7 @@ export default function FundSourceModal({ show, onClose, editingId = null }) {
             <select className="input-field" value={type} onChange={(e) => setType(e.target.value)}>
               <option value="bank">Bank</option>
               <option value="ewallet">E-Wallet</option>
-              <option value="crypto">Crypto Exchange</option>
-              <option value="cash">Cash</option>
-              <option value="investment">Investasi</option>
-              <option value="other">Lainnya</option>
+              <option value="crypto">Crypto</option>
             </select>
           </div>
           <div>

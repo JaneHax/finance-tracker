@@ -1,13 +1,7 @@
 export const DEFAULT_STATE = {
   user: null,
   hasUsername: false,
-  fundSources: [
-    { id: "fs1", name: "Bank BCA", type: "bank", balance: 0, icon: "landmark", color: "#3B82F6" },
-    { id: "fs2", name: "GoPay", type: "ewallet", balance: 0, icon: "smartphone", color: "#10B981" },
-    { id: "fs3", name: "OVO", type: "ewallet", balance: 0, icon: "smartphone", color: "#8B5CF6" },
-    { id: "fs4", name: "Binance", type: "crypto", balance: 0, icon: "bitcoin", color: "#F59E0B" },
-    { id: "fs5", name: "Cash", type: "cash", balance: 0, icon: "wallet", color: "#EC4899" },
-  ],
+  fundSources: [],
   categories: {
     expense: [
       { id: "c1", name: "Makan", icon: "utensils", color: "#F43F5E" },
@@ -86,18 +80,12 @@ export const FUND_ICON_MAP = {
   bank: "landmark",
   ewallet: "smartphone",
   crypto: "bitcoin",
-  cash: "wallet",
-  investment: "trending-up",
-  other: "credit-card",
 };
 
 export const FUND_COLOR_MAP = {
   bank: "#3B82F6",
   ewallet: "#10B981",
   crypto: "#F59E0B",
-  cash: "#EC4899",
-  investment: "#8B5CF6",
-  other: "#71717A",
 };
 
 export const CATEGORY_ICONS = [
