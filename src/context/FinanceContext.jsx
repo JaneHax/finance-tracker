@@ -92,14 +92,14 @@ export function FinanceProvider({ children }) {
         hasUsername: true,
       };
 
-      const { error: insertError } = await supabase.from("users").insert({
-        id: userId,
-        username,
-        email,
-        data: newUserState,
+      const { error: rpcError } = await supabase.rpc("create_user_profile", {
+        p_id: userId,
+        p_username: username,
+        p_email: email,
+        p_data: newUserState,
       });
 
-      if (insertError) throw new Error(insertError.message);
+      if (rpcError) throw new Error(rpcError.message);
 
       setState(newUserState);
       return authData.user;
@@ -185,11 +185,11 @@ export function FinanceProvider({ children }) {
               hasUsername: true,
             };
             setState(newUserState);
-            await supabase.from("users").upsert({
-              id: session.user.id,
-              email,
-              username: email.split("@")[0],
-              data: newUserState,
+            await supabase.rpc("create_user_profile", {
+              p_id: session.user.id,
+              p_username: email.split("@")[0],
+              p_email: email,
+              p_data: newUserState,
             });
           }
         } catch (e) {

@@ -43,6 +43,25 @@ AS $$
   SELECT email FROM users WHERE username = p_username;
 $$;
 
+CREATE OR REPLACE FUNCTION create_user_profile(
+  p_id UUID,
+  p_username TEXT,
+  p_email TEXT,
+  p_data JSONB
+)
+RETURNS VOID
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  INSERT INTO users (id, username, email, data)
+  VALUES (p_id, p_username, p_email, p_data)
+  ON CONFLICT (id) DO UPDATE SET
+    username = EXCLUDED.username,
+    email = EXCLUDED.email,
+    data = EXCLUDED.data;
+$$;
+
 -- Grant execute to anon role
 GRANT EXECUTE ON FUNCTION username_exists TO anon;
 GRANT EXECUTE ON FUNCTION get_email_by_username TO anon;
+GRANT EXECUTE ON FUNCTION create_user_profile TO anon;
