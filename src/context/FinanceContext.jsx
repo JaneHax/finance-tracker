@@ -8,16 +8,7 @@ import {
   useCallback,
   useRef,
 } from "react";
-import {
-  onAuthStateChanged,
-  createUser,
-  signInUser,
-  signOutUser,
-  sendResetPassword,
-  getDocById,
-  setDocById,
-  queryCollection,
-} from "@/lib/firebase-rest";
+import { supabase } from "@/lib/supabase";
 import { DEFAULT_STATE } from "@/lib/defaults";
 
 const FinanceContext = createContext(null);
@@ -32,7 +23,6 @@ export function FinanceProvider({ children }) {
   const [state, setState] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [authReady, setAuthReady] = useState(false);
   const [toasts, setToasts] = useState([]);
   const saveTimer = useRef(null);
 
@@ -51,11 +41,15 @@ export function FinanceProvider({ children }) {
           typeof updater === "function" ? updater(prev) : updater;
         if (save && currentUser) {
           if (saveTimer.current) clearTimeout(saveTimer.current);
-          saveTimer.current = setTimeout(() => {
-            setDocById("users", currentUser.uid, next).catch((e) => {
-              console.error("Save error:", e);
+          saveTimer.current = setTimeout(async () => {
+            const { error } = await supabase
+              .from("users")
+              .update({ data: next })
+              .eq("id", currentUser.id);
+            if (error) {
+              console.error("Save error:", error);
               showToast("Gagal menyimpan ke cloud", "error");
-            });
+            }
           }, 400);
         }
         return next;
@@ -69,12 +63,23 @@ export function FinanceProvider({ children }) {
       email = email.trim().toLowerCase();
       username = username.trim();
 
-      const results = await queryCollection("users", "username", username, 1);
-      if (results.length > 0) {
-        throw new Error("Username sudah dipakai, coba yang lain");
+      const { data: exists } = await supabase.rpc("username_exists", {
+        p_username: username,
+      });
+      if (exists) throw new Error("Username sudah dipakai, coba yang lain");
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) {
+        if (authError.message.includes("already registered"))
+          throw new Error("Email sudah terdaftar");
+        throw new Error(authError.message);
       }
 
-      const cred = await createUser(email, password);
+      const userId = authData.user.id;
 
       const newUserState = {
         ...DEFAULT_STATE,
@@ -82,9 +87,18 @@ export function FinanceProvider({ children }) {
         user: { name: username, email, photoURL: null },
         hasUsername: true,
       };
-      await setDocById("users", cred.uid, newUserState);
+
+      const { error: insertError } = await supabase.from("users").insert({
+        id: userId,
+        username,
+        email,
+        data: newUserState,
+      });
+
+      if (insertError) throw new Error(insertError.message);
+
       setState(newUserState);
-      return cred;
+      return authData.user;
     },
     []
   );
@@ -95,47 +109,71 @@ export function FinanceProvider({ children }) {
       let email = identifier;
 
       if (!identifier.includes("@")) {
-        const results = await queryCollection("users", "username", identifier, 1);
-        if (results.length === 0) {
-          throw new Error("Username tidak ditemukan");
-        }
-        email = results[0].user.email;
+        const { data: foundEmail } = await supabase.rpc("get_email_by_username", {
+          p_username: identifier,
+        });
+        if (!foundEmail) throw new Error("Username tidak ditemukan");
+        email = foundEmail;
       }
 
-      await signInUser(email, password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes("Invalid login credentials"))
+          throw new Error("Email atau password salah");
+        throw new Error(error.message);
+      }
     },
     []
   );
 
   const resetPassword = useCallback(
     async (email) => {
-      await sendResetPassword(email.trim().toLowerCase());
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase()
+      );
+      if (error) throw new Error(error.message);
       showToast("Link reset password telah dikirim", "success");
     },
     [showToast]
   );
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(async (user) => {
-      setAuthReady(true);
-      if (user) {
-        setCurrentUser(user);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
 
         try {
-          const data = await getDocById("users", user.uid);
-          if (data && data.user) {
+          const { data: userDoc, error } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+
+          if (error && error.code !== "PGRST116") {
+            // PGRST116 = not found
+            console.error("Error loading user data:", error);
+            showToast("Gagal memuat data", "error");
+          }
+
+          if (userDoc?.data) {
             const merged = {
               ...DEFAULT_STATE,
-              ...data,
+              ...userDoc.data,
               user: {
-                name: data.user?.name || data.username || "User",
-                email: data.email || user.email || "",
-                photoURL: data.user?.photoURL || null,
+                name: userDoc.data.user?.name || userDoc.username || "User",
+                email: session.user.email,
+                photoURL: userDoc.data.user?.photoURL || null,
               },
             };
             setState(merged);
           } else {
-            const email = user.email || "";
+            const email = session.user.email || "";
             const newUserState = {
               ...DEFAULT_STATE,
               username: email.split("@")[0],
@@ -143,7 +181,12 @@ export function FinanceProvider({ children }) {
               hasUsername: true,
             };
             setState(newUserState);
-            await setDocById("users", user.uid, newUserState);
+            await supabase.from("users").upsert({
+              id: session.user.id,
+              email,
+              username: email.split("@")[0],
+              data: newUserState,
+            });
           }
         } catch (e) {
           console.error("Error loading user data:", e);
@@ -155,11 +198,12 @@ export function FinanceProvider({ children }) {
       }
       setLoading(false);
     });
-    return unsub;
+
+    return () => subscription.unsubscribe();
   }, [showToast]);
 
   const logout = useCallback(async () => {
-    await signOutUser();
+    await supabase.auth.signOut();
   }, []);
 
   const saveUsername = useCallback(
@@ -172,7 +216,11 @@ export function FinanceProvider({ children }) {
       };
       setState(next);
       if (currentUser) {
-        await setDocById("users", currentUser.uid, next);
+        const { error } = await supabase
+          .from("users")
+          .update({ username, data: next })
+          .eq("id", currentUser.id);
+        if (error) console.error("saveUsername error:", error);
       }
     },
     [state, currentUser]
@@ -182,7 +230,11 @@ export function FinanceProvider({ children }) {
     const next = { ...state, hasUsername: true };
     setState(next);
     if (currentUser) {
-      await setDocById("users", currentUser.uid, next);
+      const { error } = await supabase
+        .from("users")
+        .update({ data: next })
+        .eq("id", currentUser.id);
+      if (error) console.error("skipUsername error:", error);
     }
   }, [state, currentUser]);
 
@@ -378,7 +430,6 @@ export function FinanceProvider({ children }) {
     setState: updateState,
     currentUser,
     loading,
-    authReady,
     toasts,
     showToast,
     dismissToast: (id) =>

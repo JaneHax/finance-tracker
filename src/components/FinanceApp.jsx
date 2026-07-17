@@ -20,7 +20,7 @@ const Dashboard = dynamic(() => import("@/components/Dashboard"), { ssr: false }
 const ReportsPage = dynamic(() => import("@/components/ReportsPage"), { ssr: false });
 
 function AppContent() {
-  const { state, currentUser, loading, authReady, logout, showToast } = useFinance();
+  const { state, currentUser, loading, logout, showToast } = useFinance();
   const [activePage, setActivePage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -35,11 +35,11 @@ function AppContent() {
   const [loadTimeout, setLoadTimeout] = useState(false);
 
   useEffect(() => {
-    if (loading || !authReady) {
+    if (loading) {
       const timer = setTimeout(() => setLoadTimeout(true), 15000);
       return () => clearTimeout(timer);
     }
-  }, [loading, authReady]);
+  }, [loading]);
 
   useEffect(() => {
     if (state && !state.hasUsername) {
@@ -105,7 +105,7 @@ function AppContent() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  if (!authReady || loading) {
+  if (loading) {
     return (
       <div
         style={{
