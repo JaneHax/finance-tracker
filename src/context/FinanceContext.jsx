@@ -10,22 +10,14 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signOut,
-} from "firebase/auth";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  limit,
-} from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+  createUser,
+  signInUser,
+  signOutUser,
+  sendResetPassword,
+  getDocById,
+  setDocById,
+  queryCollection,
+} from "@/lib/firebase-rest";
 import { DEFAULT_STATE } from "@/lib/defaults";
 
 const FinanceContext = createContext(null);
@@ -60,7 +52,7 @@ export function FinanceProvider({ children }) {
         if (save && currentUser) {
           if (saveTimer.current) clearTimeout(saveTimer.current);
           saveTimer.current = setTimeout(() => {
-            setDoc(doc(db, "users", currentUser.uid), next).catch((e) => {
+            setDocById("users", currentUser.uid, next).catch((e) => {
               console.error("Save error:", e);
               showToast("Gagal menyimpan ke cloud", "error");
             });
@@ -72,112 +64,86 @@ export function FinanceProvider({ children }) {
     [currentUser, showToast]
   );
 
-  // Sign up with email, username, password
   const signUp = useCallback(
     async (email, username, password) => {
       email = email.trim().toLowerCase();
       username = username.trim();
 
-      // Check username uniqueness
-      const q = query(
-        collection(db, "users"),
-        where("username", "==", username),
-        limit(1)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
+      const results = await queryCollection("users", "username", username, 1);
+      if (results.length > 0) {
         throw new Error("Username sudah dipakai, coba yang lain");
       }
 
-      // Create auth account
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const cred = await createUser(email, password);
 
-      // Create user doc in Firestore
       const newUserState = {
         ...DEFAULT_STATE,
         username,
-        user: {
-          name: username,
-          email,
-          photoURL: null,
-        },
+        user: { name: username, email, photoURL: null },
         hasUsername: true,
       };
-      await setDoc(doc(db, "users", cred.user.uid), newUserState);
-      // Override state in case onAuthStateChanged set a default already
+      await setDocById("users", cred.uid, newUserState);
       setState(newUserState);
-      return cred.user;
+      return cred;
     },
     []
   );
 
-  // Sign in with email or username + password
   const signIn = useCallback(
     async (identifier, password) => {
       identifier = identifier.trim();
       let email = identifier;
 
-      // If it doesn't look like an email, treat as username
       if (!identifier.includes("@")) {
-        const q = query(
-          collection(db, "users"),
-          where("username", "==", identifier),
-          limit(1)
-        );
-        const snap = await getDocs(q);
-        if (snap.empty) {
+        const results = await queryCollection("users", "username", identifier, 1);
+        if (results.length === 0) {
           throw new Error("Username tidak ditemukan");
         }
-        email = snap.docs[0].data().user.email;
+        email = results[0].user.email;
       }
 
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInUser(email, password);
     },
     []
   );
 
   const resetPassword = useCallback(
     async (email) => {
-      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+      await sendResetPassword(email.trim().toLowerCase());
       showToast("Link reset password telah dikirim", "success");
     },
     [showToast]
   );
 
-  // Auth state listener
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
+    const unsub = onAuthStateChanged(async (user) => {
       setAuthReady(true);
       if (user) {
         setCurrentUser(user);
 
         try {
-          const docSnap = await getDoc(doc(db, "users", user.uid));
-          if (docSnap.exists()) {
-            const data = docSnap.data();
+          const data = await getDocById("users", user.uid);
+          if (data && data.user) {
             const merged = {
               ...DEFAULT_STATE,
               ...data,
               user: {
                 name: data.user?.name || data.username || "User",
-                email: user.email,
+                email: data.email || user.email || "",
                 photoURL: data.user?.photoURL || null,
               },
             };
             setState(merged);
           } else {
+            const email = user.email || "";
             const newUserState = {
               ...DEFAULT_STATE,
-              username: user.email.split("@")[0],
-              user: {
-                name: user.email.split("@")[0],
-                email: user.email,
-                photoURL: null,
-              },
+              username: email.split("@")[0],
+              user: { name: email.split("@")[0], email, photoURL: null },
               hasUsername: true,
             };
             setState(newUserState);
-            await setDoc(doc(db, "users", user.uid), newUserState);
+            await setDocById("users", user.uid, newUserState);
           }
         } catch (e) {
           console.error("Error loading user data:", e);
@@ -189,11 +155,11 @@ export function FinanceProvider({ children }) {
       }
       setLoading(false);
     });
-    return () => unsub();
+    return unsub;
   }, [showToast]);
 
   const logout = useCallback(async () => {
-    await signOut(auth);
+    await signOutUser();
   }, []);
 
   const saveUsername = useCallback(
@@ -206,7 +172,7 @@ export function FinanceProvider({ children }) {
       };
       setState(next);
       if (currentUser) {
-        await setDoc(doc(db, "users", currentUser.uid), next);
+        await setDocById("users", currentUser.uid, next);
       }
     },
     [state, currentUser]
@@ -216,7 +182,7 @@ export function FinanceProvider({ children }) {
     const next = { ...state, hasUsername: true };
     setState(next);
     if (currentUser) {
-      await setDoc(doc(db, "users", currentUser.uid), next);
+      await setDocById("users", currentUser.uid, next);
     }
   }, [state, currentUser]);
 
