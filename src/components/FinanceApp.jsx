@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { FinanceProvider, useFinance } from "@/context/FinanceContext";
 import LoginScreen from "@/components/LoginScreen";
 import UsernamePopup from "@/components/UsernamePopup";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import Dashboard from "@/components/Dashboard";
 import TransactionsPage from "@/components/TransactionsPage";
-import ReportsPage from "@/components/ReportsPage";
 import SettingsPage from "@/components/SettingsPage";
 import ToastContainer from "@/components/ui/ToastContainer";
 import AddTransactionModal from "@/components/modals/AddTransactionModal";
@@ -16,6 +15,9 @@ import FundSourceModal from "@/components/modals/FundSourceModal";
 import CategoryModal from "@/components/modals/CategoryModal";
 import SpreadsheetModal from "@/components/modals/SpreadsheetModal";
 import LogoutModal from "@/components/modals/LogoutModal";
+
+const Dashboard = dynamic(() => import("@/components/Dashboard"), { ssr: false });
+const ReportsPage = dynamic(() => import("@/components/ReportsPage"), { ssr: false });
 
 function AppContent() {
   const { state, currentUser, loading, authReady, logout, showToast } = useFinance();
