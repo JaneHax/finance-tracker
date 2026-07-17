@@ -1,5 +1,3 @@
--- Run this in Supabase SQL Editor (https://supabase.com/dashboard/project/YOUR_PROJECT/sql/new)
-
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -65,3 +63,4 @@ $$;
 GRANT EXECUTE ON FUNCTION username_exists TO anon;
 GRANT EXECUTE ON FUNCTION get_email_by_username TO anon;
 GRANT EXECUTE ON FUNCTION create_user_profile TO anon;
+

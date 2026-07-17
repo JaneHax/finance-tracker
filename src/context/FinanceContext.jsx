@@ -408,9 +408,8 @@ export function FinanceProvider({ children }) {
     async (txn) => {
       if (!state?.settings.spreadsheetUrl) return;
       try {
-        await fetch(state.settings.spreadsheetUrl, {
+        const res = await fetch(state.settings.spreadsheetUrl, {
           method: "POST",
-          mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sheet: state.settings.sheetName,
@@ -421,7 +420,11 @@ export function FinanceProvider({ children }) {
             },
           }),
         });
-        showToast("Tersinkron ke Sheets", "success");
+        if (res.ok) {
+          showToast("Tersinkron ke Sheets", "success");
+        } else {
+          showToast("Gagal sync: " + res.status, "error");
+        }
       } catch (e) {
         showToast("Gagal sync", "error");
       }
