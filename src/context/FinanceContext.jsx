@@ -79,6 +79,10 @@ export function FinanceProvider({ children }) {
         throw new Error(authError.message);
       }
 
+      if (authData.session) {
+        await supabase.auth.setSession(authData.session);
+      }
+
       const userId = authData.user.id;
 
       const newUserState = {
