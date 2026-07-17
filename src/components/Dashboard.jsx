@@ -25,7 +25,7 @@ import {
 } from "@/lib/utils";
 import AnimatedNumber from "@/components/dashboard/AnimatedNumber";
 import Sparkline from "@/components/dashboard/Sparkline";
-import { MainChart, useDonutData, DonutChartView, DonutLegend } from "@/components/dashboard/Charts";
+import { MainChart, useFundSourceDonutData, DonutChartView, DonutLegend } from "@/components/dashboard/Charts";
 
 const ICONS = {
   wallet: Wallet,
@@ -103,7 +103,7 @@ export default function Dashboard({ onNavigate }) {
     [state.transactions]
   );
 
-  const donut = useDonutData(state.transactions, state.categories);
+  const donut = useFundSourceDonutData(state.fundSources);
 
   const changeMonth = (delta) => {
     let m = calMonth + delta;
@@ -352,9 +352,9 @@ export default function Dashboard({ onNavigate }) {
         <div className="card p-5">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="font-semibold text-base">Breakdown Pengeluaran</h3>
+              <h3 className="font-semibold text-base">Total Saldo</h3>
               <p className="text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>
-                Bulan ini
+                Per Sumber Dana
               </p>
             </div>
           </div>

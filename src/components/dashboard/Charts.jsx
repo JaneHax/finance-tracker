@@ -194,6 +194,39 @@ export function useDonutData(transactions, categories) {
   }, [transactions, categories]);
 }
 
+const FUND_SOURCE_COLORS = {
+  bank: "#10B981",
+  ewallet: "#3B82F6",
+  crypto: "#F59E0B",
+};
+
+const FUND_SOURCE_LABELS = {
+  bank: "Bank",
+  ewallet: "E-Wallet",
+  crypto: "Crypto",
+};
+
+export function useFundSourceDonutData(fundSources) {
+  return useMemo(() => {
+    const grouped = {};
+    fundSources.forEach((fs) => {
+      const type = fs.type || "other";
+      if (!grouped[type]) grouped[type] = { balance: 0, label: FUND_SOURCE_LABELS[type] || type };
+      grouped[type].balance += fs.balance || 0;
+    });
+    const labels = [],
+      data = [],
+      colors = [];
+    Object.entries(grouped).forEach(([type, info]) => {
+      labels.push(info.label);
+      data.push(info.balance);
+      colors.push(FUND_SOURCE_COLORS[type] || "#71717A");
+    });
+    const total = data.reduce((s, v) => s + v, 0);
+    return { labels, data, colors, total };
+  }, [fundSources]);
+}
+
 export function DonutChartView({ donut }) {
   if (!donut || donut.data.length === 0) {
     return (
