@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Inter, Instrument_Serif } from "next/font/google";
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
       </head>
       <body style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
         {children}
+        <Analytics />
       </body>
     </html>
   );
